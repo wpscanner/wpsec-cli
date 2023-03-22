@@ -20,6 +20,16 @@ export WPSEC_CLIENT_SECRET=your_client_secret
 Replace your_client_id and your_client_secret with your actual client ID and secret. You need a premium WPSec account to list the client id and client secret.
 
 ## Usage
+Check that the API is up and running
+```
+python wpsec_client.py CLIENT_ID CLIENT_SECRET ping
+```
+
+And the reponse should be something like:
+```
+WPSec API is up and running \o/. Response time: 0.17 seconds
+```
+
 Get all sites
 ```
 python wpsec_client.py --client_id CLIENT_ID --client_secret CLIENT_SECRET get_sites
