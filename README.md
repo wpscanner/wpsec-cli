@@ -1,4 +1,4 @@
-[![Pylint](https://github.com/wpscanner/wpsec-cli/actions/workflows/pylint.yml/badge.svg)](https://github.com/wpscanner/wpsec-cli/actions/workflows/pylint.yml)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) [![Pylint](https://github.com/wpscanner/wpsec-cli/actions/workflows/pylint.yml/badge.svg)](https://github.com/wpscanner/wpsec-cli/actions/workflows/pylint.yml)
 
 # WPSec Command-Line Client
 A simple command-line client for interacting with the WPSec API.
