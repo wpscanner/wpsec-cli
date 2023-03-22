@@ -9,8 +9,8 @@
 ## Version: 0.1.0
 ##
 
-import argparse, requests, json, sys, time
 from urllib.parse import urlparse
+import argparse, requests, json, sys, time
 
 CLI_VERSION = "0.1.0"
 NAME = "WPSec"
@@ -24,12 +24,12 @@ BANNER = """__ __ ___ __ ___ ___ __
        |_|"""
 
 def is_url(url):
-  try:
-    result = urlparse(url)
-    return all([result.scheme, result.netloc])
-  except ValueError:
-    return False
-  
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
 def get_token(client_id, client_secret):
     url = f"{API_BASE_URL}/oauth/token"
     payload = {
@@ -38,7 +38,7 @@ def get_token(client_id, client_secret):
         "grant_type": "client_credentials"
     }
     try:
-        response = requests.post(url, data=payload, headers={"User-Agent": f"{CLI_NAME}/{CLI_VERSION}"})
+        response = requests.post(url, data=payload, headers={"User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}, timeout=10)
     except requests.exceptions.ConnectionError:
         print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
         sys.exit(1)
@@ -65,7 +65,7 @@ def get_sites(token):
     headers = {"Authorization": f"Bearer {token}",
                 "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"
     }
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=10)
     if b'Error' in response.content or response.status_code != 200:
         print("Error: {}".format(response.content.decode("utf-8")))
         sys.exit(1)
@@ -85,7 +85,7 @@ def add_site(token, title, url):
     api_url = f"{API_BASE_URL}/v1/sites"
     headers = {"Authorization": f"Bearer {token}", "User-Agent": f"{CLI_NAME}/{CLI_VERSION}" }
     payload = {"title": title, "url": url}
-    response = requests.post(api_url, headers=headers, data=payload)
+    response = requests.post(api_url, headers=headers, data=payload, timeout=10)
 
     if b'Error' in response.content:
         print("Error in response: {}".format(response.content.decode("utf-8")))
@@ -125,7 +125,7 @@ def pretty_print_reports(reports, page):
 def list_reports(token, page=1):
     url = f"{API_BASE_URL}/v1/reports?page={page}"
     headers = {"Authorization": f"Bearer {token}", "User-Agent": f"{CLI_NAME}/{CLI_VERSION}" }
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=10)
     if b'Error' in response.content or response.status_code != 200:
         print(response.content.decode("utf-8"))
         sys.exit(1)
@@ -135,7 +135,7 @@ def list_reports(token, page=1):
 def get_report(token, report_id):
     url = f"{API_BASE_URL}/v1/report/{report_id}"
     headers = {"Authorization": f"Bearer {token}", "User-Agent": f"{CLI_NAME}/{CLI_VERSION}" }
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=10)
     if b'"No resource found' in response.content:
         print("Error: Report not found")
         sys.exit(1)
@@ -151,7 +151,7 @@ def ping():
     # Calculate response time
     start = time.time()
     url = f"{API_BASE_URL}/v1/ping"
-    response = requests.get(url, headers={"User-Agent": f"{CLI_NAME}/{CLI_VERSION}"})
+    response = requests.get(url, headers={"User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}, timeout=10)
     end_time = time.time() - start
     if b'Ping Pong' in response.content:
         if end_time > 1: # Slow response times?
@@ -168,8 +168,8 @@ def main():
     parser.add_argument('--version', action='version', version=f'{CLI_NAME} {CLI_VERSION}')
     subparsers = parser.add_subparsers(dest="action")
 
-    ping_parser = subparsers.add_parser("ping", help="Ping the API")
-    get_sites_parser = subparsers.add_parser("get_sites", help="Get all sites")
+    subparsers.add_parser("ping", help="Ping the API")
+    subparsers.add_parser("get_sites", help="Get all sites")
 
     add_site_parser = subparsers.add_parser("add_site", help="Add a new site")
     add_site_parser.add_argument("title", help="Site title")
