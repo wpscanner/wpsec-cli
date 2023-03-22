@@ -35,7 +35,7 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET add_site "Site Title" "https://examp
 ```
 List all reports with pagination
 ```
-python wpsec-cli.py CLIENT_ID  CLIENT_SECRET list_reports --page 1 --per_page 10
+python wpsec-cli.py CLIENT_ID  CLIENT_SECRET list_reports --page 2
 ```
 Get a specific report
 ```
