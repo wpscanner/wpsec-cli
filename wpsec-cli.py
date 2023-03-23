@@ -1,4 +1,5 @@
 #!env python3
+"""WPsec command-line client"""
 # -*- coding: utf-8 -*-
 ##
 # WPSec command-line client
@@ -234,7 +235,7 @@ def main():
     token = get_token(args.client_id, args.client_secret)
 
     if args.action == "ping":
-        ping()  # Token is not required for ping
+        ping()  # Token is not really required for ping
     elif args.action == "get_sites":
         get_sites(token)
     elif args.action == "add_site":
