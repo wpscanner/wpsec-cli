@@ -11,10 +11,11 @@
 
 from urllib.parse import urlparse
 import argparse
-import requests
 import json
-import sys
 import time
+import sys
+import requests
+
 
 CLI_VERSION = "0.1.0"
 NAME = "WPSec"
@@ -27,8 +28,8 @@ BANNER = """__ __ ___ __ ___ ___ __
  \\_/\\_/| .__/__/\\___\\__|
        |_|"""
 
-
 def is_url(url):
+    """Check if the URL is valid"""
     try:
         result = urlparse(url)
         return all([result.scheme, result.netloc])
@@ -37,6 +38,7 @@ def is_url(url):
 
 
 def get_token(client_id, client_secret):
+    """Get a token from the API"""
     url = f"{API_BASE_URL}/oauth/token"
     payload = {
         "client_id": client_id,
@@ -65,12 +67,14 @@ def get_token(client_id, client_secret):
 
 
 def pretty_print_sites(sites):
+    """Print a list of sites in a pretty way"""
     print(f"{'ID':<10}{'Title':<30}{'URL':<40}")
     for site in sites:
         print(f"{site['id']:<10}{site['name']:<30}{site['title']:<40}")
 
 
 def get_sites(token):
+    """Get a list of sites from the API"""
     url = f"{API_BASE_URL}/v1/sites"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"
@@ -83,8 +87,8 @@ def get_sites(token):
     sites = response.json()
     pretty_print_sites(sites)
 
-
 def add_site(token, title, url):
+    """Add a site to the account"""
     # Ugly fix due to api bug
     url = url.strip()
     title = title.strip()
@@ -104,7 +108,7 @@ def add_site(token, title, url):
         timeout=10)
 
     if b'Error' in response.content:
-        print("Error in response: {}".format(response.content.decode("utf-8")))
+        print(f"Error in response: {response.content.decode('utf-8')}")
         sys.exit(1)
     if b'"Site added"' in response.content:
         print(f"Site added: {title} ({url})")
@@ -119,6 +123,7 @@ def add_site(token, title, url):
 
 
 def pretty_print_pagination(pagination, page):
+    """Print pagination info in a pretty way"""
     print("")
     print(
         f"Page {pagination['current_page']} of {pagination['last_page']} ({pagination['total']} reports total)")
@@ -127,7 +132,7 @@ def pretty_print_pagination(pagination, page):
 
 
 def pretty_print_reports(reports, page):
-
+    """Print a list of reports in a pretty way"""
     no_reports = len(reports['data'].values()) - 1
     if no_reports == 0:
         print(f"Error: No reports found on page {page}")
@@ -145,6 +150,7 @@ def pretty_print_reports(reports, page):
 
 
 def list_reports(token, page=1):
+    """List reports from the API"""
     url = f"{API_BASE_URL}/v1/reports?page={page}"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
@@ -157,6 +163,7 @@ def list_reports(token, page=1):
 
 
 def get_report(token, report_id):
+    """Get a report from the API"""
     url = f"{API_BASE_URL}/v1/report/{report_id}"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
@@ -169,11 +176,12 @@ def get_report(token, report_id):
         sys.exit(1)
     try:
         print(json.dumps(response.json(), indent=4))
-    except BaseException:
+    except json.decoder.JSONDecodeError:
         print("Error parsing JSON report")
 
 
 def ping():
+    """Ping the API to check if it's up"""
     # Calculate response time
     start = time.time()
     url = f"{API_BASE_URL}/v1/ping"
@@ -195,6 +203,7 @@ def ping():
 
 
 def main():
+    """Main function"""
     parser = argparse.ArgumentParser(description=f"{NAME} command-line client")
     parser.add_argument("client_id", help="Client ID")
     parser.add_argument("client_secret", help="Client Secret")
