@@ -4,12 +4,19 @@ A simple command-line client for interacting with the WPSec API. API Documentati
 
 ## Requirements
 Python 3.6 or higher
-### Installation
+### Installation 
 Save the Python script [wpsec-cli.py](wpsec-cli.py) above to your local machine.
 Install the required packages with the following command:
 ```
 pip install requests
 ```
+### Installation docker
+You can also use the docker version of the command line tool. Like this:
+
+```
+docker pull docker.io/jonaslejon/wpsec-cli:latest
+```
+
 ## Configuration
 
 You need to provide the client_id and client_secret as command-line arguments. The Rest JSON API keys can be fetched here: https://wpsec.com/account/api.php
@@ -60,3 +67,13 @@ Get a specific report
 python wpsec-cli.py CLIENT_ID CLIENT_SECRET get_report REPORT_ID
 ```
 Replace CLIENT_ID, CLIENT_SECRET, and REPORT_ID with appropriate values.
+
+## Usage docker
+
+Read more here: https://hub.docker.com/r/jonaslejon/wpsec-cli
+
+# Building docker 
+Just run
+```
+docker build -t jonaslejon/wpsec-cli:0.1.0 -t jonaslejon/wpsec-cli:latest .
+```
