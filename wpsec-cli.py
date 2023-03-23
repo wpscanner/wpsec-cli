@@ -66,6 +66,7 @@ def get_token(client_id, client_secret):
     except KeyError:
         print(GENERIC_ERROR)
         sys.exit(1)
+
     return ret
 
 
