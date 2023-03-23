@@ -57,14 +57,14 @@ def get_token(client_id, client_secret):
         print("Error: Client authentication failed, invalid client ID or client secret.")
         sys.exit(1)
     try:
-        r = response.json()['access_token']
+        ret = response.json()['access_token']
     except json.decoder.JSONDecodeError:
         print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
         sys.exit(1)
     except KeyError:
         print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
         sys.exit(1)
-    return r
+    return ret
 
 
 def pretty_print_sites(sites):
@@ -82,7 +82,7 @@ def get_sites(token):
                }
     response = requests.get(url, headers=headers, timeout=10)
     if b'Error' in response.content or response.status_code != 200:
-        print("Error: {}".format(response.content.decode("utf-8")))
+        print(f"Error: {response.content.decode('utf-8')}")
         sys.exit(1)
 
     sites = response.json()
