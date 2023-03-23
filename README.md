@@ -77,3 +77,6 @@ Just run
 ```
 docker build -t jonaslejon/wpsec-cli:0.1.0 -t jonaslejon/wpsec-cli:latest .
 ```
+
+# Todo
+Remove websites from the CLI.
