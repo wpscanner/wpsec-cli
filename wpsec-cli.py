@@ -23,6 +23,8 @@ NAME = "WPSec"
 CLI_NAME = f"{NAME} CLI"
 API_BASE_URL = "https://api.wpsec.com"
 
+GENERIC_ERROR = f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error"
+
 # 31337 ASCII art
 BANNER = """__ __ ___ __ ___ ___ __
 \\ V  V / '_ (_-</ -_) _|
@@ -51,7 +53,7 @@ def get_token(client_id, client_secret):
             url, data=payload, headers={
                 "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}, timeout=10)
     except requests.exceptions.ConnectionError:
-        print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
+        print(GENERIC_ERROR)
         sys.exit(1)
     if b'Client authentication failed' in response.content:
         print("Error: Client authentication failed, invalid client ID or client secret.")
@@ -59,10 +61,10 @@ def get_token(client_id, client_secret):
     try:
         ret = response.json()['access_token']
     except json.decoder.JSONDecodeError:
-        print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
+        print(GENERIC_ERROR)
         sys.exit(1)
     except KeyError:
-        print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
+        print(GENERIC_ERROR)
         sys.exit(1)
     return ret
 
@@ -200,7 +202,7 @@ def ping():
             print(
                 f"{NAME} API is up and running \\o/. Response time: {end_time:.2f} seconds")
     else:
-        print(f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error")
+        print(GENERIC_ERROR)
 
 
 def main():
