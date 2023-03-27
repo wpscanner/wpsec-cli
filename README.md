@@ -1,6 +1,6 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 # WPSec.com Command-Line Client
-A simple command-line client for interacting with the WPSec API. API Documentation can be found [here](https://api.wpsec.com/api/documentation).
+A simple command-line client for interacting with the WPSec API. API Documentation can be found [here](https://api.wpsec.com/api/documentation), a Premium account is needed at WPSec.com.
 
 ## Requirements
 Python 3.6 or higher
