@@ -4,10 +4,10 @@
 ##
 # WPSec command-line client
 ##
-# Updated 2023-03-22
+# Updated 2023-03-27
 # Author: Jonas Lejon <jlejon@wpsec.com>
 # License: MIT
-# Version: 0.1.0
+# Version: 0.1.1
 ##
 
 from urllib.parse import urlparse
@@ -18,9 +18,10 @@ import sys
 import requests
 
 
-CLI_VERSION = "0.1.0"
+CLI_VERSION = "0.1.1"
 NAME = "WPSec"
 CLI_NAME = f"{NAME} CLI"
+API_VERSION = "v1"
 API_BASE_URL = "https://api.wpsec.com"
 
 GENERIC_ERROR = f"Error: {NAME} API is down. Please create a new support ticket at: https://support.wpsec.com/hc/en-us/requests/new&tf_subject=API%20Error"
@@ -79,7 +80,7 @@ def pretty_print_sites(sites):
 
 def get_sites(token):
     """Get a list of sites from the API"""
-    url = f"{API_BASE_URL}/v1/sites"
+    url = f"{API_BASE_URL}/{API_VERSION}/sites"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"
                }
@@ -101,7 +102,7 @@ def add_site(token, title, url):
         print(f"Invalid URL: {url}")
         sys.exit(1)
 
-    api_url = f"{API_BASE_URL}/v1/sites"
+    api_url = f"{API_BASE_URL}/{API_VERSION}/sites"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
     payload = {"title": title, "url": url}
@@ -155,7 +156,7 @@ def pretty_print_reports(reports, page):
 
 def list_reports(token, page=1):
     """List reports from the API"""
-    url = f"{API_BASE_URL}/v1/reports?page={page}"
+    url = f"{API_BASE_URL}/{API_VERSION}/reports?page={page}"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
     response = requests.get(url, headers=headers, timeout=10)
@@ -168,7 +169,7 @@ def list_reports(token, page=1):
 
 def get_report(token, report_id):
     """Get a report from the API"""
-    url = f"{API_BASE_URL}/v1/report/{report_id}"
+    url = f"{API_BASE_URL}/{API_VERSION}/report/{report_id}"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
     response = requests.get(url, headers=headers, timeout=10)
@@ -188,7 +189,7 @@ def ping():
     """Ping the API to check if it's up"""
     # Calculate response time
     start = time.time()
-    url = f"{API_BASE_URL}/v1/ping"
+    url = f"{API_BASE_URL}/{API_VERSION}/ping"
     response = requests.get(
         url,
         headers={
