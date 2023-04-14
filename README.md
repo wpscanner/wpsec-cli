@@ -5,7 +5,7 @@ A simple command-line client for interacting with the WPSec API. API Documentati
 ## Requirements
 Python 3.6 or higher
 ### Installation 
-Save the Python script [wpsec-cli.py](wpsec-cli.py) above to your local machine.
+Save the Python script [wpsec-cli.py](https://raw.githubusercontent.com/wpscanner/wpsec-cli/main/wpsec-cli.py) above to your local machine.
 Install the required packages with the following command:
 ```
 pip install requests
