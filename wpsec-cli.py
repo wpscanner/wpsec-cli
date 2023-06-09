@@ -84,7 +84,12 @@ def get_sites(token):
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"
                }
-    response = requests.get(url, headers=headers, timeout=10)
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+    except requests.exceptions.ReadTimeout:
+        print(f"Error: {NAME} API timeout. Please try again later.")
+        sys.exit(1)
+    
     if b'Error' in response.content or response.status_code != 200:
         print(f"Error: {response.content.decode('utf-8')}")
         sys.exit(1)
@@ -159,7 +164,11 @@ def list_reports(token, page=1):
     url = f"{API_BASE_URL}/{API_VERSION}/reports?page={page}"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
-    response = requests.get(url, headers=headers, timeout=10)
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+    except requests.exceptions.ReadTimeout:
+        print(f"Error: {NAME} API timeout. Please try again later.")
+        sys.exit(1)
     if b'Error' in response.content or response.status_code != 200:
         print(response.content.decode("utf-8"))
         sys.exit(1)
@@ -172,7 +181,13 @@ def get_report(token, report_id):
     url = f"{API_BASE_URL}/{API_VERSION}/report/{report_id}"
     headers = {"Authorization": f"Bearer {token}",
                "User-Agent": f"{CLI_NAME}/{CLI_VERSION}"}
-    response = requests.get(url, headers=headers, timeout=10)
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+    except requests.exceptions.ReadTimeout:
+        print(f"Error: {NAME} API timeout. Please try again later.")
+        sys.exit(1)
+
     if b'"No resource found' in response.content:
         print("Error: Report not found")
         sys.exit(1)
