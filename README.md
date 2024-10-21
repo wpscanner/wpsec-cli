@@ -19,7 +19,7 @@ docker pull docker.io/jonaslejon/wpsec-cli:latest
 
 ## Configuration
 
-You need to provide the client_id and client_secret as command-line arguments. The Rest JSON API keys can be fetched here: https://wpsec.com/account/api.php
+You need to provide the client_id and client_secret as command-line arguments. The Rest JSON API keys (CLIENT_ID and CLIENT_SECRET) can be fetched here: https://wpsec.com/account/api.php
 
 ## Usage
 Check that the API is up and running
