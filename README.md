@@ -389,9 +389,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Better URL validation
 - Added file output for reports
 
-### Previous Versions
-See [CHANGELOG.md](CHANGELOG.md) for full version history.
-
 ---
 
 Made with ❤️ by the WPSec team
