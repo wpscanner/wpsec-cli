@@ -221,7 +221,13 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET get_report REPORT_ID --output report
 Just run:
 
 ```bash
-docker build -t jonaslejon/wpsec-cli:0.1.0 -t jonaslejon/wpsec-cli:latest .
+docker build -t jonaslejon/wpsec-cli:0.5.0 -t jonaslejon/wpsec-cli:latest .
+```
+
+Build with SBOM:
+
+```bash
+DOCKER_BUILDKIT=1 docker build --attest type=sbom --attest type=provenance -t jonaslejon/wpsec-cli:0.5.0 -t jonaslejon/wpsec-cli:latest .
 ```
 
 ## 🛠️ Advanced Usage
