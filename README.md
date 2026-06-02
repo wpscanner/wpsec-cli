@@ -68,6 +68,9 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET get_sites
 # Add a new site
 python wpsec-cli.py CLIENT_ID CLIENT_SECRET add_site "My WordPress Site" "https://example.com"
 
+# Remove a site (by ID, from get_sites)
+python wpsec-cli.py CLIENT_ID CLIENT_SECRET delete_site SITE_ID
+
 # List security reports
 python wpsec-cli.py CLIENT_ID CLIENT_SECRET list_reports
 
@@ -134,6 +137,17 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET add_site "Site Title" "https://examp
 **Arguments:**
 - `title` - Descriptive name for the site
 - `url` - Full URL including http:// or https://
+
+#### `delete_site` (aliases: `ds`, `del`)
+Remove a WordPress site from your account. This is a soft delete on the server (the
+site is hidden and stops being scanned; its scan history is preserved).
+
+```bash
+python wpsec-cli.py CLIENT_ID CLIENT_SECRET delete_site SITE_ID
+```
+
+**Arguments:**
+- `site_id` - Numeric site ID (get it from `get_sites`)
 
 #### `list_reports` (aliases: `lr`, `reports`)
 List security reports with pagination.
@@ -341,7 +355,7 @@ The CLI includes robust error handling with:
 
 ## 📝 Todo
 
-- Remove websites from the CLI
+- _Site removal landed in v0.6.0 (`delete_site`)._
 
 ## 🤝 Contributing
 
@@ -381,7 +395,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📊 Version History
 
-### v0.5.0 (Current)
+### v0.6.0 (Current)
+- Added `delete_site` command to remove sites (aliases: `ds`, `del`)
+- `get_sites` now shows the real site URL (API now returns it)
+- Friendlier "site already exists" message on duplicate `add_site`
+
+### v0.5.0
 - Added colorized output with emojis
 - Improved error handling and validation
 - Added debug mode and quiet mode
