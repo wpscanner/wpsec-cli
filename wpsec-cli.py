@@ -40,7 +40,7 @@ except ImportError:
 @dataclass
 class Config:
     """Application configuration"""
-    CLI_VERSION: str = "0.5.0"
+    CLI_VERSION: str = "0.6.0"
     NAME: str = "WPSec"
     CLI_NAME: str = "WPSec CLI"
     API_VERSION: str = "v1"
@@ -82,6 +82,7 @@ class Emojis:
     PING = "🏓"
     LIST = "📋"
     ADD = "➕"
+    TRASH = "🗑️"
     SPARKLE = "✨"
 
 
@@ -334,20 +335,42 @@ class WPSecClient:
         
         api_url = f"{self.config.API_BASE_URL}/{self.config.API_VERSION}/sites"
         payload = {"title": title, "url": url}
-        
-        response = self._make_request("POST", api_url, data=payload, expected_codes=[200, 201])
-        
-        if b'Error' in response.content:
-            raise WPSecAPIError(f"{Emojis.ERROR} Error in response: {response.content.decode('utf-8')}")
-        
+
+        # 422 = Laravel validation failure (e.g. duplicate URL); allow it through
+        # so we can surface a friendly message instead of a raw HTTP error.
+        response = self._make_request("POST", api_url, data=payload, expected_codes=[200, 201, 422])
+
+        if b'been taken' in response.content or b'already exists' in response.content:
+            raise WPSecAPIError(f"{ErrorMessages.SITE_EXISTS.value}: {title} ({url})")
+
         if b'"Site added"' in response.content:
             return {'status': 'added', 'title': title, 'url': url}
-        
-        if b'been taken' in response.content:
-            raise WPSecAPIError(f"{ErrorMessages.SITE_EXISTS.value}: {title} ({url})")
-        
+
+        if b'Error' in response.content or response.status_code == 422:
+            raise WPSecAPIError(f"{Emojis.ERROR} Error in response: {response.content.decode('utf-8')}")
+
         # Unknown response
         raise WPSecAPIError(f"{Emojis.WARNING} Unknown response from server: {response.content.decode('utf-8')}")
+
+    def delete_site(self, site_id: str) -> Dict[str, Any]:
+        """Remove a site from the account (soft delete on the server side)"""
+        site_id = str(site_id).strip()
+        if not site_id.isdigit():
+            raise WPSecAPIError(
+                f"{Emojis.WARNING} Invalid site ID: '{site_id}'\n"
+                f"{Emojis.INFO} Site IDs are numeric (see 'get_sites')."
+            )
+
+        url = f"{self.config.API_BASE_URL}/{self.config.API_VERSION}/sites/{site_id}"
+        response = self._make_request("DELETE", url, expected_codes=[200, 202, 204, 404])
+
+        if response.status_code == 404:
+            raise WPSecAPIError(
+                f"{Emojis.SEARCH} Site not found: {site_id}\n"
+                f"{Emojis.INFO} Use 'get_sites' to list your site IDs."
+            )
+
+        return {'status': 'removed', 'id': site_id}
     
     def list_reports(self, page: int = 1) -> Dict[str, Any]:
         """List reports from the API"""
@@ -475,6 +498,8 @@ class WPSecCLI:
             'sites': 'get_sites',
             'as': 'add_site',
             'add': 'add_site',
+            'ds': 'delete_site',
+            'del': 'delete_site',
             'lr': 'list_reports',
             'reports': 'list_reports',
             'gr': 'get_report',
@@ -584,7 +609,11 @@ class WPSecCLI:
         add_site_parser = subparsers.add_parser("add_site", help=f"{Emojis.ADD} Add a new site", aliases=['as', 'add'])
         add_site_parser.add_argument("title", help="Site title")
         add_site_parser.add_argument("url", help="Site URL (must include http:// or https://)")
-        
+
+        # Delete site command
+        delete_site_parser = subparsers.add_parser("delete_site", help=f"{Emojis.TRASH} Remove a site", aliases=['ds', 'del'])
+        delete_site_parser.add_argument("site_id", help="Site ID (numeric, from get_sites)")
+
         # List reports command
         list_reports_parser = subparsers.add_parser("list_reports", help=f"{Emojis.LIST} List all reports", aliases=['lr', 'reports'])
         list_reports_parser.add_argument(
@@ -634,6 +663,16 @@ class WPSecCLI:
         else:
             print(f"{Fore.GREEN}{Emojis.SUCCESS} Site added: {result['title']} ({result['url']}){Style.RESET_ALL}")
     
+    def _action_delete_site(self, args):
+        """Handle delete_site action"""
+        if not self.quiet_mode:
+            print(f"{Fore.CYAN}{Emojis.TRASH} Removing site {args.site_id}...{Style.RESET_ALL}")
+        result = self.client.delete_site(args.site_id)
+        if self.quiet_mode:
+            print(f"removed\t{result['id']}")
+        else:
+            print(f"{Fore.GREEN}{Emojis.SUCCESS} Site removed: ID {result['id']}{Style.RESET_ALL}")
+
     def _action_list_reports(self, args):
         """Handle list_reports action"""
         # First, get the first page to find total pages
@@ -768,7 +807,7 @@ class WPSecCLI:
         # In quiet mode, just print basic info
         if self.quiet_mode:
             for site in sites:
-                print(f"{site.get('id', 'N/A')}\t{site.get('name', 'N/A')}\t{site.get('title', site.get('url', 'N/A'))}")
+                print(f"{site.get('id', 'N/A')}\t{site.get('name', 'N/A')}\t{site.get('url', site.get('title', 'N/A'))}")
             return
         
         # Print header
@@ -779,7 +818,7 @@ class WPSecCLI:
         for i, site in enumerate(sites):
             site_id = str(site.get('id', 'N/A'))
             site_name = site.get('name', 'N/A')
-            site_url = site.get('title', site.get('url', 'N/A'))
+            site_url = site.get('url', site.get('title', 'N/A'))
             
             # Alternate row colors
             if i % 2 == 0:
