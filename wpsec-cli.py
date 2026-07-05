@@ -571,10 +571,24 @@ class WPSecCLI:
     
     def _create_parser(self) -> argparse.ArgumentParser:
         """Create argument parser"""
+        # Options usable BOTH before the positionals and after the subcommand
+        # (e.g. `--quiet ID SECRET get_sites` or `ID SECRET get_sites --quiet`).
+        # SUPPRESS defaults stop a subparser from clobbering a value set earlier.
+        common = argparse.ArgumentParser(add_help=False)
+        common.add_argument('-d', '--debug', action='store_true',
+                            default=argparse.SUPPRESS, help='Enable debug output')
+        common.add_argument('--stage', action='store_true', default=argparse.SUPPRESS,
+                            help='Use staging API (https://api-stage.wpsec.com)')
+        common.add_argument('-u', '--api-url', default=argparse.SUPPRESS,
+                            help='Override API base URL (default: https://api.wpsec.com)')
+        common.add_argument('-q', '--quiet', action='store_true',
+                            default=argparse.SUPPRESS, help='Quiet mode - minimal output')
+
         parser = argparse.ArgumentParser(
             description=f"{self.config.NAME} command-line client {Emojis.ROCKET}",
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog=f"{Fore.CYAN}For more information, visit: https://wpsec.com{Style.RESET_ALL}"
+            epilog=f"{Fore.CYAN}For more information, visit: https://wpsec.com{Style.RESET_ALL}",
+            parents=[common]
         )
         
         parser.add_argument("client_id", help="Client ID")
@@ -585,43 +599,31 @@ class WPSecCLI:
             version=f'{self.config.CLI_NAME} {self.config.CLI_VERSION} {Emojis.SPARKLE}'
         )
         
-        # Add debug flag with short option
-        parser.add_argument('-d', '--debug', action='store_true', help='Enable debug output')
-        
-        # Add stage flag
-        parser.add_argument('--stage', action='store_true', help='Use staging API (https://api-stage.wpsec.com)')
-        
-        # Add API URL override with short option
-        parser.add_argument('-u', '--api-url', help='Override API base URL (default: https://api.wpsec.com)')
-        
-        # Add quiet mode
-        parser.add_argument('-q', '--quiet', action='store_true', help='Quiet mode - minimal output')
-        
         subparsers = parser.add_subparsers(dest="action", help="Available actions")
         
         # Ping command
-        subparsers.add_parser("ping", help=f"{Emojis.PING} Ping the API", aliases=['p'])
+        subparsers.add_parser("ping", help=f"{Emojis.PING} Ping the API", aliases=['p'], parents=[common])
         
         # Get sites command
-        subparsers.add_parser("get_sites", help=f"{Emojis.SITE} Get all sites", aliases=['gs', 'sites'])
+        subparsers.add_parser("get_sites", help=f"{Emojis.SITE} Get all sites", aliases=['gs', 'sites'], parents=[common])
         
         # Add site command
-        add_site_parser = subparsers.add_parser("add_site", help=f"{Emojis.ADD} Add a new site", aliases=['as', 'add'])
+        add_site_parser = subparsers.add_parser("add_site", help=f"{Emojis.ADD} Add a new site", aliases=['as', 'add'], parents=[common])
         add_site_parser.add_argument("title", help="Site title")
         add_site_parser.add_argument("url", help="Site URL (must include http:// or https://)")
 
         # Delete site command
-        delete_site_parser = subparsers.add_parser("delete_site", help=f"{Emojis.TRASH} Remove a site", aliases=['ds', 'del'])
+        delete_site_parser = subparsers.add_parser("delete_site", help=f"{Emojis.TRASH} Remove a site", aliases=['ds', 'del'], parents=[common])
         delete_site_parser.add_argument("site_id", help="Site ID (numeric, from get_sites)")
 
         # List reports command
-        list_reports_parser = subparsers.add_parser("list_reports", help=f"{Emojis.LIST} List all reports", aliases=['lr', 'reports'])
+        list_reports_parser = subparsers.add_parser("list_reports", help=f"{Emojis.LIST} List all reports", aliases=['lr', 'reports'], parents=[common])
         list_reports_parser.add_argument(
             "-p", "--page", type=int, default=1, help="Page number (default: 1)"
         )
         
         # Get report command
-        get_report_parser = subparsers.add_parser("get_report", help=f"{Emojis.REPORT} Get a specific report", aliases=['gr', 'report'])
+        get_report_parser = subparsers.add_parser("get_report", help=f"{Emojis.REPORT} Get a specific report", aliases=['gr', 'report'], parents=[common])
         get_report_parser.add_argument("report_id", help="Report ID (32 character hex string)")
         get_report_parser.add_argument('-o', '--output', help='Output to file instead of stdout')
         
