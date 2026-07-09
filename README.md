@@ -262,13 +262,21 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET get_report REPORT_ID --output report
 Just run:
 
 ```bash
-docker build -t jonaslejon/wpsec-cli:0.5.0 -t jonaslejon/wpsec-cli:latest .
+docker build -t jonaslejon/wpsec-cli:0.7.0 -t jonaslejon/wpsec-cli:latest .
 ```
 
 Build with SBOM:
 
 ```bash
-DOCKER_BUILDKIT=1 docker build --attest type=sbom --attest type=provenance -t jonaslejon/wpsec-cli:0.5.0 -t jonaslejon/wpsec-cli:latest .
+DOCKER_BUILDKIT=1 docker build --attest type=sbom --attest type=provenance -t jonaslejon/wpsec-cli:0.7.0 -t jonaslejon/wpsec-cli:latest .
+```
+
+Multi-architecture (amd64 + arm64) build and push, as published to Docker Hub:
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  --provenance=true --sbom=true \
+  -t jonaslejon/wpsec-cli:0.7.0 -t jonaslejon/wpsec-cli:latest --push .
 ```
 
 ## 🛠️ Advanced Usage
