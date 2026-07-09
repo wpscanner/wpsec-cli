@@ -40,7 +40,7 @@ except ImportError:
 @dataclass
 class Config:
     """Application configuration"""
-    CLI_VERSION: str = "0.6.0"
+    CLI_VERSION: str = "0.7.0"
     NAME: str = "WPSec"
     CLI_NAME: str = "WPSec CLI"
     API_VERSION: str = "v1"
@@ -64,6 +64,7 @@ class ErrorMessages(Enum):
     SITE_EXISTS = "⚠️  Error: Site already exists on your account"
     HTTP_ERROR = "🚨 Error: HTTP {code} - {message}"
     UNEXPECTED_STATUS = "⚠️  Warning: Unexpected status code {code} for {url}"
+    PREMIUM_REQUIRED = "🔐 Error: Changing the scan schedule is a Premium feature. Upgrade at https://wpsec.com"
 
 
 # Emojis for different actions
@@ -84,6 +85,12 @@ class Emojis:
     ADD = "➕"
     TRASH = "🗑️"
     SPARKLE = "✨"
+    CALENDAR = "📅"
+
+
+# Scan cadences accepted by the API. Validated client-side so a typo fails fast
+# instead of costing a round trip.
+SCHEDULES = ("daily", "weekly", "monthly")
 
 
 # ASCII art banner with color
@@ -371,7 +378,57 @@ class WPSecClient:
             )
 
         return {'status': 'removed', 'id': site_id}
-    
+
+    def set_schedule(self, site_id: str, schedule: str) -> Dict[str, Any]:
+        """Change how often a site is scanned. Premium accounts only."""
+        site_id = str(site_id).strip()
+        if not site_id.isdigit():
+            raise WPSecAPIError(
+                f"{Emojis.WARNING} Invalid site ID: '{site_id}'\n"
+                f"{Emojis.INFO} Site IDs are numeric (see 'get_sites')."
+            )
+
+        schedule = schedule.strip().lower()
+        if schedule not in SCHEDULES:
+            raise WPSecAPIError(
+                f"{Emojis.WARNING} Invalid schedule: '{schedule}'\n"
+                f"{Emojis.INFO} Choose one of: {', '.join(SCHEDULES)}"
+            )
+
+        url = f"{self.config.API_BASE_URL}/{self.config.API_VERSION}/sites/{site_id}/schedule"
+        # 403 (not Premium), 404 (not the caller's site) and 422 (bad value) are
+        # expected outcomes we translate into friendly messages below.
+        response = self._make_request(
+            "PUT", url, data={"schedule": schedule}, expected_codes=[200, 403, 404, 422]
+        )
+
+        if response.status_code == 403:
+            raise WPSecAPIError(ErrorMessages.PREMIUM_REQUIRED.value)
+
+        if response.status_code == 404:
+            raise WPSecAPIError(
+                f"{Emojis.SEARCH} Site not found: {site_id}\n"
+                f"{Emojis.INFO} Use 'get_sites' to list your site IDs."
+            )
+
+        if response.status_code == 422:
+            try:
+                message = response.json().get('message', response.text)
+            except json.JSONDecodeError:
+                message = response.text
+            raise WPSecAPIError(f"{Emojis.ERROR} {message}")
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            raise WPSecAPIError(f"{ErrorMessages.INVALID_JSON.value}:\n{response.text}")
+
+        return {
+            'status': 'updated',
+            'id': data.get('id', site_id),
+            'schedule': data.get('schedule', schedule),
+        }
+
     def list_reports(self, page: int = 1) -> Dict[str, Any]:
         """List reports from the API"""
         url = f"{self.config.API_BASE_URL}/{self.config.API_VERSION}/reports?page={page}"
@@ -500,6 +557,8 @@ class WPSecCLI:
             'add': 'add_site',
             'ds': 'delete_site',
             'del': 'delete_site',
+            'ss': 'set_schedule',
+            'schedule': 'set_schedule',
             'lr': 'list_reports',
             'reports': 'list_reports',
             'gr': 'get_report',
@@ -614,6 +673,15 @@ class WPSecCLI:
         delete_site_parser = subparsers.add_parser("delete_site", help=f"{Emojis.TRASH} Remove a site", aliases=['ds', 'del'])
         delete_site_parser.add_argument("site_id", help="Site ID (numeric, from get_sites)")
 
+        # Set schedule command
+        set_schedule_parser = subparsers.add_parser(
+            "set_schedule",
+            help=f"{Emojis.CALENDAR} Change how often a site is scanned (Premium)",
+            aliases=['ss', 'schedule']
+        )
+        set_schedule_parser.add_argument("site_id", help="Site ID (numeric, from get_sites)")
+        set_schedule_parser.add_argument("schedule", choices=SCHEDULES, help="How often to scan the site")
+
         # List reports command
         list_reports_parser = subparsers.add_parser("list_reports", help=f"{Emojis.LIST} List all reports", aliases=['lr', 'reports'])
         list_reports_parser.add_argument(
@@ -672,6 +740,17 @@ class WPSecCLI:
             print(f"removed\t{result['id']}")
         else:
             print(f"{Fore.GREEN}{Emojis.SUCCESS} Site removed: ID {result['id']}{Style.RESET_ALL}")
+
+    def _action_set_schedule(self, args):
+        """Handle set_schedule action"""
+        if not self.quiet_mode:
+            print(f"{Fore.CYAN}{Emojis.CALENDAR} Setting schedule for site {args.site_id} to {args.schedule}...{Style.RESET_ALL}")
+        result = self.client.set_schedule(args.site_id, args.schedule)
+        if self.quiet_mode:
+            print(f"{result['id']}\t{result['schedule']}")
+        else:
+            print(f"{Fore.GREEN}{Emojis.SUCCESS} Schedule updated: site {result['id']} is now scanned "
+                  f"{result['schedule']}{Style.RESET_ALL}")
 
     def _action_list_reports(self, args):
         """Handle list_reports action"""
@@ -803,29 +882,42 @@ class WPSecCLI:
         
         name_width = max(len(site.get('name', '')) for site in sites)
         name_width = max(name_width, 5) + 2  # Minimum width of 5 for "Title" + padding
-        
+
+        # The schedule column only appears if the API reported it, so output stays
+        # identical when talking to an API that doesn't return the field.
+        has_schedule = any(site.get('schedule') for site in sites)
+        schedule_width = 0
+        if has_schedule:
+            schedule_width = max(len(str(site.get('schedule', ''))) for site in sites)
+            schedule_width = max(schedule_width, 8) + 2  # Minimum width of 8 for "Schedule" + padding
+
         # In quiet mode, just print basic info
         if self.quiet_mode:
             for site in sites:
-                print(f"{site.get('id', 'N/A')}\t{site.get('name', 'N/A')}\t{site.get('url', site.get('title', 'N/A'))}")
+                line = f"{site.get('id', 'N/A')}\t{site.get('name', 'N/A')}\t{site.get('url', site.get('title', 'N/A'))}"
+                if has_schedule:
+                    line += f"\t{site.get('schedule', 'N/A')}"
+                print(line)
             return
-        
+
         # Print header
-        print(f"{Fore.CYAN}{Style.BRIGHT}{'ID':<{id_width}}{'Title':<{name_width}}{'URL'}{Style.RESET_ALL}")
-        print(f"{Fore.BLUE}{'-' * id_width}{'-' * name_width}{'-' * 40}{Style.RESET_ALL}")
-        
+        schedule_header = f"{'Schedule':<{schedule_width}}" if has_schedule else ''
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'ID':<{id_width}}{'Title':<{name_width}}{schedule_header}{'URL'}{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}{'-' * id_width}{'-' * name_width}{'-' * schedule_width}{'-' * 40}{Style.RESET_ALL}")
+
         # Print sites
         for i, site in enumerate(sites):
             site_id = str(site.get('id', 'N/A'))
             site_name = site.get('name', 'N/A')
             site_url = site.get('url', site.get('title', 'N/A'))
-            
+            site_schedule = f"{str(site.get('schedule', 'N/A')):<{schedule_width}}" if has_schedule else ''
+
             # Alternate row colors
             if i % 2 == 0:
-                print(f"{site_id:<{id_width}}{site_name:<{name_width}}{site_url}")
+                print(f"{site_id:<{id_width}}{site_name:<{name_width}}{site_schedule}{site_url}")
             else:
-                print(f"{Style.DIM}{site_id:<{id_width}}{site_name:<{name_width}}{site_url}{Style.RESET_ALL}")
-        
+                print(f"{Style.DIM}{site_id:<{id_width}}{site_name:<{name_width}}{site_schedule}{site_url}{Style.RESET_ALL}")
+
         print(f"\n{Fore.GREEN}{Emojis.SUCCESS} Total sites: {len(sites)}{Style.RESET_ALL}")
     
     def _pretty_print_reports(self, reports: Dict[str, Any], page: int, total_pages: int = None):

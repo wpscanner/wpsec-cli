@@ -14,7 +14,8 @@ __ __ ___ __ ___ ___ __
 ## ✨ Features
 
 - 🚀 **Fast API Integration** - Direct connection to WPSec's security scanning API
-- 🌐 **Site Management** - Add and list WordPress sites for monitoring
+- 🌐 **Site Management** - Add, list and remove WordPress sites for monitoring
+- 📅 **Scan Scheduling** - Set how often a site is scanned: daily, weekly or monthly
 - 📊 **Report Management** - View detailed security reports with JSON output
 - 🏓 **Health Monitoring** - Ping API endpoints to check service status
 - 🎨 **Colorized Output** - Beautiful terminal output with emojis and colors
@@ -71,6 +72,9 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET add_site "My WordPress Site" "https:
 # Remove a site (by ID, from get_sites)
 python wpsec-cli.py CLIENT_ID CLIENT_SECRET delete_site SITE_ID
 
+# Change how often a site is scanned (daily, weekly or monthly)
+python wpsec-cli.py CLIENT_ID CLIENT_SECRET set_schedule SITE_ID weekly
+
 # List security reports
 python wpsec-cli.py CLIENT_ID CLIENT_SECRET list_reports
 
@@ -121,11 +125,20 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET ping
 ```
 
 #### `get_sites` (aliases: `gs`, `sites`)
-List all WordPress sites in your account.
+List all WordPress sites in your account, including each site's scan schedule.
 
 ```bash
 python wpsec-cli.py CLIENT_ID CLIENT_SECRET get_sites
 ```
+
+```
+ID      Title                 Schedule  URL
+--------------------------------------------------------------------------------
+50423   ISOC-SE               daily     https://isoc.se
+91818   ScanME                weekly    https://scanme.wpsec.com
+```
+
+With `--quiet`, each site prints as `id`, `name`, `url`, `schedule` separated by tabs.
 
 #### `add_site` (aliases: `as`, `add`)
 Add a new WordPress site for monitoring.
@@ -148,6 +161,20 @@ python wpsec-cli.py CLIENT_ID CLIENT_SECRET delete_site SITE_ID
 
 **Arguments:**
 - `site_id` - Numeric site ID (get it from `get_sites`)
+
+#### `set_schedule` (aliases: `ss`, `schedule`)
+Change how often a site is scanned. Requires a Premium account.
+
+```bash
+python wpsec-cli.py CLIENT_ID CLIENT_SECRET set_schedule SITE_ID weekly
+```
+
+**Arguments:**
+- `site_id` - Numeric site ID (get it from `get_sites`)
+- `schedule` - One of `daily`, `weekly` or `monthly`
+
+Setting a site to the schedule it already has succeeds and changes nothing. Use
+`get_sites` to see the current schedule of every site.
 
 #### `list_reports` (aliases: `lr`, `reports`)
 List security reports with pagination.
@@ -356,6 +383,7 @@ The CLI includes robust error handling with:
 ## 📝 Todo
 
 - _Site removal landed in v0.6.0 (`delete_site`)._
+- _Scan scheduling landed in v0.7.0 (`set_schedule`)._
 
 ## 🤝 Contributing
 
@@ -395,7 +423,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📊 Version History
 
-### v0.6.0 (Current)
+### v0.7.0 (Current)
+- Added `set_schedule` command to change a site's scan frequency (aliases: `ss`, `schedule`)
+- `get_sites` now shows each site's schedule
+
+### v0.6.0
 - Added `delete_site` command to remove sites (aliases: `ds`, `del`)
 - `get_sites` now shows the real site URL (API now returns it)
 - Friendlier "site already exists" message on duplicate `add_site`
